@@ -6,3 +6,6 @@ Run python script with a starting URL, it will then place the max amount of page
  
 
 Script will grab wikipedia title, first section that is a summary of the page, and the URL. 
+
+
+I used tom brady as training data to see if I could get a NLP model that would take some context and attempt to answer those questions. It was decent Knew how many super bowls he won but not how many he lost. So still working to get bot better, which might have a cost factor.
