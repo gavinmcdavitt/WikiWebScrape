@@ -9,3 +9,4 @@ Script will grab wikipedia title, first section that is a summary of the page, a
 
 
 I used tom brady as training data to see if I could get a NLP model that would take some context and attempt to answer those questions. It was decent Knew how many super bowls he won but not how many he lost. So still working to get bot better, which might have a cost factor.
+ Progress: We have a bunch of data that we need to connect our RAG machine. Then we should put an an analysis of all of the data, pick the article that is the best suited if over some percentage of correctness. Use the url to get the entire page and use that as context to answer a person's question. Boom you have an AI bot!!!!
