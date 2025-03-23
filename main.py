@@ -226,8 +226,117 @@ class WikipediaCrawler:
             print(f"Remaining links saved to {self.queue_file}")
             print(f"{len(self.to_visit)} links remaining in the queue")
 
+    def migrate_and_crawl_links(self):
+        """
+        Migrate links from the original queue file to a new queue file while crawling.
+        Process:
+        1. Create a new queue file (remaining_links_2.json)
+        2. Crawl all links from the original queue (remaining_links.json)
+        3. Store newly discovered links in the new queue file
+        4. Replace the original queue file with the new one when done
+        """
+        original_queue_file = self.queue_file
+        new_queue_file = "remaining_links_2.json"
+        
+        # Keep track of the original to_visit set
+        original_to_visit = self.to_visit.copy()
+        
+        # Create empty new queue file
+        with open(new_queue_file, 'w', encoding='utf-8') as f:
+            json.dump([], f)
+        
+        print(f"\n{'=' * 80}")
+        print(f"Starting migration process from {original_queue_file} to {new_queue_file}")
+        print(f"Total links to crawl: {len(original_to_visit)}")
+        print(f"{'=' * 80}\n")
+        
+        # Set new queue file for saving newly discovered links
+        self.queue_file = new_queue_file
+        
+        # Clear the to_visit set to prepare for crawling
+        self.to_visit = set()
+        
+        # Track crawled pages count
+        pages_crawled = 0
+        
+        try:
+            # Process each link from the original queue
+            for url in original_to_visit:
+                print(f"\n{'=' * 80}\nCrawling: {url}\n{'=' * 80}")
+                
+                # Skip if already visited
+                if url in self.visited:
+                    print(f"URL {url} already visited, skipping")
+                    continue
+                
+                # Mark as visited
+                self.visited.add(url)
+                
+                # Fetch the page content
+                soup = self.fetch_page(url)
+                
+                if soup:
+                    # Extract the title
+                    title = self.get_title(soup)
+                    print(f"TITLE: {title}")
+                    
+                    # Extract the summary
+                    summary = self.get_summary(soup)
+                    print("\nSUMMARY:")
+                    print(summary)
+                    
+                    # Append to JSON file
+                    if self.append_to_json(title, summary, url):
+                        print(f"\nAppended to {self.output_file}")
+                        pages_crawled += 1
+                        print(f"Pages crawled: {pages_crawled}/{len(original_to_visit)}")
+                    
+                    # Extract links
+                    print("\nExtracting links...")
+                    new_links = self.extract_links(soup)
+                    print(f"Found {len(new_links)} links")
+                    
+                    # Add new links to the to_visit set (for the new queue)
+                    for link in new_links:
+                        if link not in self.visited and link not in self.to_visit:
+                            self.to_visit.add(link)
+                    
+                    # Periodically save the new queue (after every page)
+                    self.save_queue()
+        
+        except KeyboardInterrupt:
+            print("\nCrawling interrupted by user")
+        finally:
+            # Save the new queue before exiting
+            self.save_queue()
+            
+            print(f"\n{'=' * 80}")
+            print(f"Migration process complete.")
+            print(f"Processed {pages_crawled} pages from original queue.")
+            print(f"Found {len(self.to_visit)} new links saved to {new_queue_file}")
+            
+            # Replace the original queue file with the new one
+            if os.path.exists(original_queue_file):
+                os.remove(original_queue_file)
+                print(f"Deleted original queue file: {original_queue_file}")
+            
+            os.rename(new_queue_file, original_queue_file)
+            print(f"Renamed {new_queue_file} to {original_queue_file}")
+            
+            # Update the queue file name back to the original
+            self.queue_file = original_queue_file
+            
+            print(f"Data saved to {self.output_file}")
+            print(f"Queue migration completed successfully.")
+            print(f"{'=' * 80}\n")
+
 
 if __name__ == "__main__":
     start_url = "https://en.wikipedia.org/wiki/Assassination_of_John_F._Kennedy"
     crawler = WikipediaCrawler(start_url, max_pages=100)
+    
+    # To use the new migration functionality, uncomment this line:
+     crawler.migrate_and_crawl_links()
+    
+    # Or use the original crawl function:
     crawler.crawl()
